@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserType {
+  STAFF
+  CLIENT
+  SYSTEM
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  DISABLED
+  ARCHIVED
+}
+
+enum Provider {
+  MICROSOFT
+  EMAIL
+  MAGIC_LINK
+}
+
+enum OrganizationType {
+  INTERNAL
+  CLIENT
+  PARTNER
+}
+
+model User {
+  id               String                    @id @default(cuid())
+  email            String                    @unique
+  displayName      String
+  firstName        String?
+  lastName         String?
+  avatarUrl        String?
+  userType         UserType                  @default(STAFF)
+  status           UserStatus                @default(ACTIVE)
+  lastLoginAt      DateTime?
+  createdAt        DateTime                  @default(now())
+  updatedAt        DateTime                  @updatedAt
+  staffProfile     StaffProfile?
+  identities       IdentityProviderAccount[]
+  memberships      Membership[]
+  refreshSessions  RefreshSession[]
+  auditLogs        AuditLog[]
+}
+
+model IdentityProviderAccount {
+  id                String   @id @default(cuid())
+  userId            String
+  provider          Provider
+  providerAccountId String
+  tenantId          String?
+  email             String?
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Organization {
+  id           String          @id @default(cuid())
+  name         String
+  slug         String          @unique
+  type         OrganizationType @default(INTERNAL)
+  primaryEmail String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  memberships  Membership[]
+  client       ClientAccount?
+}
+
+model Membership {
+  id             String       @id @default(cuid())
+  userId         String
+  organizationId String
+  role           String
+  department     String?
+  isPrimary      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([organizationId])
+}
+
+model StaffProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  department         String?
+  jobTitle           String?
+  managerEmail       String?
+  employeeNumber     String?
+  microsoftObjectId  String?  @unique
+  lastSeenAt         DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ClientAccount {
+  id             String       @id @default(cuid())
+  organizationId String       @unique
+  ownerUserId    String?
+  status         String       @default("active")
+  billingEmail   String?
+  portalSlug     String?      @unique
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}
+
+model RefreshSession {
+  id          String   @id @default(cuid())
+  userId      String
+  tokenHash   String   @unique
+  userAgent   String?
+  ipAddress   String?
+  expiresAt   DateTime
+  createdAt   DateTime @default(now())
+  revokedAt   DateTime?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  action      String
+  entityType  String
+  entityId    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
