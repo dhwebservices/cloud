@@ -219,6 +219,45 @@ npm run prisma:migrate
 npm run dev
 ```
 
+## Railway deploy
+
+DH Cloud is best deployed as a normal backend service on Railway.
+
+Railway's own Fastify guide says to deploy from a GitHub repo and notes that Fastify should listen on `::` so the service is reachable over Railway's public and private network ([Railway Fastify guide](https://docs.railway.com/guides/fastify)).
+
+Railway's PostgreSQL docs say you can add a Postgres service from the project canvas and connect to it using the provided `DATABASE_URL` and other Postgres env vars ([Railway PostgreSQL docs](https://docs.railway.com/databases/postgresql)).
+
+Recommended Railway setup for this repo:
+
+- Source repo: `dhwebservices/cloud`
+- Branch: `main`
+- Build command: `npm run check`
+- Start command: `npm run start`
+
+Recommended service variables:
+
+- `NODE_ENV=production`
+- `APP_NAME=DH Cloud`
+- `HOST=::`
+- `PORT=4000`
+- `APP_BASE_URL=https://<your-railway-domain-or-api-domain>`
+- `WEBSITE_URL=https://<your-website-domain>`
+- `STAFF_PORTAL_URL=https://staff.dhwebsiteservices.co.uk`
+- `CLIENT_PORTAL_URL=https://<your-client-portal-domain>`
+- `JWT_SECRET=<long-random-secret>`
+- `COOKIE_SECRET=<different-long-random-secret>`
+- `MICROSOFT_TENANT_ID=<entra-tenant-id>`
+- `MICROSOFT_CLIENT_ID=<entra-client-id>`
+- `MICROSOFT_CLIENT_SECRET=<entra-client-secret>`
+- `MICROSOFT_REDIRECT_URI=https://<your-railway-domain-or-api-domain>/v1/auth/microsoft/callback`
+- `MICROSOFT_ALLOWED_TENANT_ID=<optional-tenant-lock>`
+
+Database variable:
+
+- `DATABASE_URL` should come from the Railway PostgreSQL service
+
+Railway's variables docs note that service variables are configured in the service's Variables tab and are available both at build time and runtime ([Railway variables docs](https://docs.railway.com/variables)).
+
 ## Main routes
 
 - `GET /` service info
